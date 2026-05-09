@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.DS_Store
+*.log
+.vscode/
+frontend/node_modules/
+backend/target/
+backend/.mvn/
+backend/bin/

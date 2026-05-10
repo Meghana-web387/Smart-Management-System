@@ -27,13 +27,6 @@ const Dashboard = () => {
   const [stats, setStats] = useState({ totalUsers: 0, totalRecords: 0, totalActivities: 0 });
   const [loading, setLoading] = useState(true);
 
-  // Dynamic Title based on role
-  const getDashboardTitle = () => {
-    if (!user?.role) return 'Dashboard';
-    const role = user.role.replace('ROLE_', '');
-    return `${role.charAt(0) + role.slice(1).toLowerCase()} Dashboard`;
-  };
-
   // Weekly trend data for the bar chart
   const data = [
     { name: 'Mon', count: 12 },
@@ -51,13 +44,19 @@ const Dashboard = () => {
         const res = await api.get('/reports/summary');
         setStats(res.data);
       } catch (err) {
-        console.error(err);
+        console.error("Dashboard Stats Fetch Error:", err);
       } finally {
         setLoading(false);
       }
     };
     fetchStats();
   }, []);
+
+  const getDashboardTitle = () => {
+    if (!user || !user.role) return "Executive Dashboard";
+    const roleName = user.role.replace('ROLE_', '');
+    return `${roleName.charAt(0).toUpperCase() + roleName.slice(1).toLowerCase()} Dashboard`;
+  };
 
   if (loading) return <div className="p-8 text-slate-500 font-bold">Synchronizing system...</div>;
 
@@ -73,8 +72,7 @@ const Dashboard = () => {
 
       {/* Unified Blue Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Total Users */}
-        <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-200 relative overflow-hidden group">
+        <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-200 relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
               <div className="p-4 bg-white/20 rounded-2xl">
@@ -88,8 +86,7 @@ const Dashboard = () => {
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
         </div>
 
-        {/* Verified Records */}
-        <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-200 relative overflow-hidden group">
+        <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-200 relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
               <div className="p-4 bg-white/20 rounded-2xl">
@@ -103,8 +100,7 @@ const Dashboard = () => {
           <div className="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
         </div>
 
-        {/* System Activities */}
-        <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-200 relative overflow-hidden group">
+        <div className="bg-blue-600 p-8 rounded-[2.5rem] text-white shadow-xl shadow-blue-200 relative overflow-hidden">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-6">
               <div className="p-4 bg-white/20 rounded-2xl">

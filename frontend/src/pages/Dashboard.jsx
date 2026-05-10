@@ -22,8 +22,16 @@ import {
 } from 'recharts';
 
 const Dashboard = () => {
+  const { user } = useAuth();
   const [stats, setStats] = useState({ totalUsers: 0, totalRecords: 0, totalActivities: 0 });
   const [loading, setLoading] = useState(true);
+
+  // Dynamic Title based on role
+  const getDashboardTitle = () => {
+    if (!user?.role) return 'Dashboard';
+    const role = user.role.replace('ROLE_', '');
+    return `${role.charAt(0) + role.slice(1).toLowerCase()} Dashboard`;
+  };
 
   // Weekly trend data for the bar chart
   const data = [
@@ -58,7 +66,7 @@ const Dashboard = () => {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h2 className="text-3xl font-black text-slate-900 tracking-tight">Executive Dashboard</h2>
+        <h2 className="text-3xl font-black text-slate-900 tracking-tight">{getDashboardTitle()}</h2>
         <p className="text-slate-500 font-medium">Unified oversight of system performance and data.</p>
       </motion.div>
 

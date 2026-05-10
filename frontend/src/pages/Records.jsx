@@ -20,6 +20,9 @@ const Records = () => {
     date: new Date().toISOString().split('T')[0]
   });
 
+  // Role permissions
+  const canManage = user?.role === 'ROLE_ADMIN' || user?.role === 'ROLE_OPERATOR';
+
   useEffect(() => {
     fetchRecords();
   }, []);
@@ -27,7 +30,7 @@ const Records = () => {
   const fetchRecords = async () => {
     try {
       const res = await api.get('/records');
-      const mappedData = res.data.map(item => ({
+      const mappedData = (res.data || []).map(item => ({
         ...item,
         status: item.status === 'PENDING' ? 'IN PROGRESS' : item.status
       }));
@@ -41,6 +44,7 @@ const Records = () => {
 
   const handleAddRecord = async (e) => {
     e.preventDefault();
+    if (!canManage) return;
     try {
       if (editingId) {
         await api.put(`/records/${editingId}`, newRecord);
@@ -57,6 +61,7 @@ const Records = () => {
   };
 
   const deleteRecord = async (id) => {
+    if (!canManage) return;
     if (window.confirm('Delete this record?')) {
       try {
         await api.delete(`/records/${id}`);
@@ -76,11 +81,13 @@ const Records = () => {
   };
 
   const filteredRecords = records.filter(record => {
-    const matchesSearch = record.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         record.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (record.title || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         (record.description || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'All' || record.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  if (loading) return <div className="p-8 text-slate-500 font-bold">Synchronizing records...</div>;
 
   return (
     <div className="space-y-8">
@@ -93,13 +100,15 @@ const Records = () => {
           <button onClick={() => handleExport('Excel')} className="p-3 bg-white border border-slate-100 rounded-2xl text-slate-400 hover:text-emerald-600 transition-all shadow-sm">
             <Download size={20} />
           </button>
-          <button 
-            onClick={() => { setEditingId(null); setNewRecord({ title: '', description: '', status: 'IN PROGRESS', date: new Date().toISOString().split('T')[0] }); setShowModal(true); }}
-            className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center space-x-2 shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all"
-          >
-            <Plus size={20} />
-            <span>Add Record</span>
-          </button>
+          {canManage && (
+            <button 
+              onClick={() => { setEditingId(null); setNewRecord({ title: '', description: '', status: 'IN PROGRESS', date: new Date().toISOString().split('T')[0] }); setShowModal(true); }}
+              className="bg-blue-600 text-white px-6 py-3 rounded-2xl font-bold flex items-center space-x-2 shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all"
+            >
+              <Plus size={20} />
+              <span>Add Record</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -140,7 +149,7 @@ const Records = () => {
                 <th className="pb-4 font-black text-slate-400 text-[10px] uppercase tracking-widest pl-4">Record Info</th>
                 <th className="pb-4 font-black text-slate-400 text-[10px] uppercase tracking-widest">Description</th>
                 <th className="pb-4 font-black text-slate-400 text-[10px] uppercase tracking-widest text-center">Status</th>
-                <th className="pb-4 font-black text-slate-400 text-[10px] uppercase tracking-widest text-right pr-4">Actions</th>
+                {canManage && <th className="pb-4 font-black text-slate-400 text-[10px] uppercase tracking-widest text-right pr-4">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
@@ -165,31 +174,38 @@ const Records = () => {
                       {record.status}
                     </span>
                   </td>
-                  <td className="py-5 text-right pr-4">
-                    <div className="flex items-center justify-end space-x-2">
-                      <button 
-                        onClick={() => { setEditingId(record.id); setNewRecord(record); setShowModal(true); }}
-                        className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button 
-                        onClick={() => deleteRecord(record.id)}
-                        className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
+                  {canManage && (
+                    <td className="py-5 text-right pr-4">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button 
+                          onClick={() => { setEditingId(record.id); setNewRecord(record); setShowModal(true); }}
+                          className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button 
+                          onClick={() => deleteRecord(record.id)}
+                          className="p-2 text-slate-400 hover:text-rose-600 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </motion.tr>
               ))}
             </tbody>
           </table>
+          {filteredRecords.length === 0 && (
+            <div className="text-center py-20 text-slate-400 font-bold text-sm italic">
+              No matching records found.
+            </div>
+          )}
         </div>
       </div>
 
       <AnimatePresence>
-        {showModal && (
+        {showModal && canManage && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowModal(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
             <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="bg-white rounded-[2.5rem] p-10 w-full max-w-lg relative shadow-2xl overflow-hidden">
